@@ -19,7 +19,7 @@
 | 项目 | 状态 |
 | --- | --- |
 | 操作系统 | Windows；本地测试环境为 Windows PowerShell、Node.js 22、Python 3.12 |
-| Agent | Codex CLI 0.160.0 已自动发现 Skill，原生 `feishu` MCP 读取、单段原位更新及回读通过；本机 Windows elevated sandbox 初始化失败，依赖本地命令的完整 Skill 工作流仍阻塞 |
+| Agent | Codex CLI 0.160.0 已通过官方 `unelevated + workspace-write` 备用沙箱完成单篇原件修订端到端验收；本机默认 elevated 的 ACL 刷新故障仍未修复 |
 | MCP | 固定 `lark-mcp@0.5.1`，提交锁文件，启动时不使用 npx 下载 |
 | 本地测试 | 配置、公众号解析、日志适配、FTP 安全回归、回环代理及模拟 stdio 测试通过 |
 | 干净目录安装 | 从暂存候选导出后，`npm ci` 和 37 项测试通过；未复制真实配置，缺配置时安全失败，不代替 Codex 实机接入 |
@@ -112,7 +112,7 @@ if (-not (Test-Path -LiteralPath .\.codex\config.toml)) {
 
 在 Agent 中信任该项目并重新加载项目配置，确认发现名为 `feishu` 的连接与文档工具。工具能发现不代表已经有 API、OAuth 或目标文档权限。其他 Agent 应在其项目级配置中调用同一 PowerShell 启动器；不自动修改用户级配置。
 
-Codex CLI 的原生 MCP 读写与本地命令执行需要分别验收。本机 `0.160.0` 的前者已通过，后者受 `helper_unknown_error` 阻塞；不要据此关闭沙箱或宣称完整工作流通过。非交互审批与沙箱排障见 [Windows 接入说明](docs/windows-setup.md#codex-cli-验收与沙箱限制)。
+Codex CLI 的原生 MCP 读写与本地命令执行需要分别验收。本机 `0.160.0` 已在官方备用沙箱中完成自动读取 Skill、重读原文与关键图、修订原件、核对 Wiki／索引及更新本地状态；没有关闭沙箱或持久修改客户端配置。本次走查重后的原件修订分支，不代表通过 Codex 重跑了新增导入／迁入。备用模式的隔离差异、非交互审批与排障见 [Windows 接入说明](docs/windows-setup.md#codex-cli-验收与沙箱限制)。
 
 ### 5. 指定归档入口并提交文章
 

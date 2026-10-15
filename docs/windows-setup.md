@@ -1,6 +1,6 @@
 # Windows 接入与排障
 
-本项目面向已经使用 Agent 工具的用户。先按 [README](../README.md) 安装、配置，再按本文核对飞书权限。已通过项目启动器验证实际 MCP 协议，并通过官方 MCP SDK 使用同一启动器完成交互登录、专用私有空间中的三类资料卡写入／迁入／回读及原文档局部修订。图片块与素材标识已验证；另已通过 Codex CLI 0.160.0 的原生 MCP 读取、单段更新及回读。Codex 的本地命令沙箱初始化仍失败，因此完整 Skill 工作流、OAuth 自动续期、真实故障恢复及页面视觉检查尚未完成。
+本项目面向已经使用 Agent 工具的用户。先按 [README](../README.md) 安装、配置，再按本文核对飞书权限。已通过项目启动器验证实际 MCP 协议，并通过官方 MCP SDK 使用同一启动器完成交互登录、专用私有空间中的三类资料卡写入／迁入／回读及原文档局部修订。图片块与素材标识已验证；另已通过 Codex CLI 0.160.0 的官方备用沙箱完成单篇原件修订端到端。默认 elevated 仍有初始化故障；Codex 新增导入／迁入分支、OAuth 自动续期、真实故障恢复及页面视觉检查尚未完成。
 
 ## 1. 飞书应用与调用身份
 
@@ -72,12 +72,24 @@ python -B .\scripts\check-mcp.py
 
 ### Codex CLI 验收与沙箱限制
 
-本机使用 `codex-cli 0.160.0`，通过 `codex exec`、项目现有 MCP 配置及原生工具完成专用测试总索引的节点解析、正文读取、子节点列举、空间私有／关闭分享状态检查，并更新 1 个既有验收段落后回读。文档与节点标识不变，其余块、3 个子页面和索引链接保持不变；未新建或删除文档。没有改用自建协议客户端或直接 HTTP 请求。
+本机使用 `codex-cli 0.160.0`。先完成原生 MCP 读写隔离检查，随后在官方备用沙箱中完成单篇工程文章的原件修订端到端：Codex 自行读取实际 Skill／状态、运行公众号读取脚本并核读全文与关键图，修订同一资料卡 1 段、测试索引 1 段，回读 Wiki／正文／索引并更新本地原记录。其余卡片块、文档与节点标识、3 个子页面及索引链接保持不变；未新建或删除文档。新增导入／迁入分支未通过 Codex 重跑；本次按查重规则复用原件。没有改用自建协议客户端或直接请求飞书 HTTP API。
 
-- 初次调用已自动识别项目 Skill，但读取本地文件时报 `sandbox_setup_error`。`codex doctor --json` 将问题定位为 Windows elevated sandbox provisioning 失败，错误码 `helper_unknown_error`，建议修复或重装获准来源的 Codex CLI。默认 daemon 模式下，最小 `Write-Output CODEX_SANDBOX_PROBE` 命令也在创建进程前失败，实际错误为 `helper_unknown_error: setup refresh had errors`，不是仅由 `--no-daemon` 导致。这是本机已观察到的阻塞，不代表所有 Windows 安装都会失败；本项目未执行重装、修改系统环境或关闭沙箱。
-- 为单独验证 MCP，验收指令直接提供公开的项目规则，不让 Codex 执行本地命令；这只能证明原生 MCP 读写通道，不替代自动加载 Skill 全文、运行公众号读取脚本及更新本地状态的完整流程。
+- 初次调用已自动识别项目 Skill，但本地命令报 `sandbox_setup_error`。`codex doctor --json` 显示 elevated provisioning 失败；默认 daemon 模式的最小命令也报 `helper_unknown_error: setup refresh had errors`。后续只读诊断将范围缩小到 ACL 刷新：技能目录所属者为沙箱账号，deny ACE 更新失败，另有一处用户目录 read ACE 更新失败。未手工重置所属者或 ACL，未重装、修改系统环境或用户级配置。默认 elevated 仍未修复，不把备用模式成功称为已修复它。
+- 此前隔离 MCP 验收曾由指令提供公开规则，只能证明原生通道；本轮备用沙箱下的原件修订则由 Codex 自行读取实际 Skill／状态及运行本地脚本，二者分别记录。
 - 非交互调用的 `-a never` 在本机拒绝了需要审批的 MCP 请求，不能据此认定飞书权限不足。改用此版本支持的 `--approve-for-me` 后，经正常自动审阅完成上述操作；没有使用 `--dangerously-bypass-approvals-and-sandbox`。自动审阅不保证批准任意请求，任务仍须明确限定专用测试资源与允许修改的范围。
 - 本次使用 `--no-daemon` 和 `--ephemeral`，不持久保存该次会话文件，也不将原始协议或文章正文重定向为本地报告。客户端的其他认证、诊断及系统状态仍遵循客户端机制，不宣称全系统零写入。
+
+#### 会话级官方备用沙箱
+
+按[官方 Windows 沙箱指引](https://developers.openai.com/codex/windows)，elevated setup 无法完成且策略允许时，可以使用 `unelevated`。它使用受限令牌和 ACL 文件系统边界，**网络隔离较弱且不支持拒绝读取路径**，不是关闭沙箱，也不是与 elevated 等价的安全保证。先遵循组织管理策略，不能用它绕过强制要求。
+
+已在本机 0.160.0／PowerShell 验证的最小探针（项目目录运行）：
+
+```powershell
+codex -c windows.sandbox=unelevated sandbox --permission-profile :workspace -- powershell.exe -NoProfile -Command "Write-Output CODEX_SANDBOX_PROBE"
+```
+
+预期输出 `CODEX_SANDBOX_PROBE`，退出码为 0。`-c` 只对本次调用生效，不改保存的配置。实际原件修订的 `codex exec` 同样使用 `-c windows.sandbox=unelevated` 与 `--sandbox workspace-write`，并通过 `-c sandbox_workspace_write.network_access=true` 仅为该次会话允许读取原文／原图的网络访问；继续采用 `--approve-for-me` 正常自动审阅及 `--ephemeral`。未使用无沙箱模式。不要把这些选项默认写入所有用户或其他项目的配置。
 
 可在项目目录检查本机 Codex：
 
@@ -86,7 +98,7 @@ codex --version
 codex doctor --json
 ```
 
-诊断发现问题时可能非零退出。报告只在本机核对；提交 issue 前仅提取错误类别，不公开完整报告、个人路径、连接配置或认证信息。先修复客户端沙箱，再重新验收完整 Skill 工作流；不要通过关闭沙箱、复制令牌或改用其他账户绕过。
+诊断发现问题时可能非零退出，默认模式的报告仍可能显示 elevated 故障。报告只在本机核对；提交 issue 前仅提取错误类别，不公开完整报告、个人路径、连接配置或认证信息，不读取或分享 `.sandbox-secrets`。默认模式的修复仍需按官方 setup／权限指引单独处理，不能复制令牌或换账户绕过。PowerShell 中文状态写入的编码约束见 Skill「存储约定」；只设置 Python 编码不保证发送端管道保留中文。
 
 ## 4. 归档入口
 
@@ -105,7 +117,7 @@ codex doctor --json
 | `keytar` 安装失败 | 查看原生模块／预编译产物下载错误及 Node 支持情况；不为排障导出认证存储 |
 | 回调地址不匹配 | 对照实际提示核对应用安全设置、协议、主机和端口 |
 | 工具能发现但 API 拒绝 | 分别核对应用权限、用户实际 OAuth 授权、调用身份及目标资源权限 |
-| Codex 本地命令报 `sandbox_setup_error` | 用 `codex doctor --json` 核对客户端沙箱；本机为 `helper_unknown_error`，不通过关闭沙箱或重建飞书文档处理 |
+| Codex 本地命令报 `sandbox_setup_error` | 核对 doctor 与沙箱日志；本机 elevated 的 ACL 刷新仍失败，官方会话级 unelevated 备用模式已通过，不能声称默认模式已修复 |
 | Codex 非交互 MCP 审批被拒绝 | 区分客户端审批策略与飞书 API 权限；`-a never` 不会代替授权，按客户端正常审批流程处理 |
 | 新增权限后仍缺 scope | 关闭 MCP 后显式 `-Login` 重新授权，再连接；不是只重启 |
 | 入口不可访问或文章列表为空 | 保留已知地址，核对权限与分页；不当作不存在后新建 |
@@ -118,6 +130,8 @@ codex doctor --json
 
 ## 官方参考
 
+- [Codex 官方 Windows 沙箱与备用模式](https://developers.openai.com/codex/windows)
+- [Codex 官方审批与网络边界](https://developers.openai.com/codex/agent-approvals-security)
 - [所选版本 README](https://github.com/larksuite/lark-openapi-mcp/blob/v0.5.1/README_ZH.md)
 - [所选版本 CLI](https://github.com/larksuite/lark-openapi-mcp/blob/v0.5.1/src/cli.ts)
 - [官方登录实现](https://github.com/larksuite/lark-openapi-mcp/blob/v0.5.1/src/cli/login-handler.ts)
