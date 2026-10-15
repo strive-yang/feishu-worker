@@ -48,6 +48,39 @@ console.log(JSON.stringify(selected));
         self.assertEqual(json.loads(result.stdout), expected)
         self.assertEqual(result.stderr, "")
 
+    def test_import_filename_boundary_and_independent_full_title(self):
+        code = r"""
+const assert = require('node:assert/strict');
+const {z} = require('zod');
+for (const locale of ['zh', 'en']) {
+  const tool = require('./node_modules/@larksuiteoapi/lark-mcp/dist/mcp-tool/tools/' +
+    locale + '/builtin-tools/docx/builtin.js').larkDocxBuiltinImportTool;
+  const schema = z.object(tool.schema);
+  const title = 'Synthetic full title ' + 'x'.repeat(40);
+  const markdown = '# ' + title + '\n\nSynthetic test content.';
+  const parse = name => schema.safeParse({data: {markdown, file_name: name}, useUAT: true});
+  assert.equal(parse('a'.repeat(27)).success, true);
+  assert.equal(parse('a'.repeat(28)).success, false);
+  assert.equal(parse('\u540d'.repeat(27)).success, true);
+  assert.equal(parse('\u540d'.repeat(28)).success, false);
+  assert.equal(parse('\u{1f4c4}'.repeat(27)).success, true);
+  assert.equal(parse('\u{1f4c4}'.repeat(28)).success, false);
+  assert.equal(parse(title).success, false);
+  const accepted = parse('synthetic-card');
+  assert.equal(accepted.success, true);
+  assert.equal(accepted.data.data.markdown, markdown);
+  assert.equal(accepted.data.useUAT, true);
+}
+assert.equal(Object.keys(require.cache).filter(p =>
+  /lark-mcp[\\/]dist[\\/](auth[\\/]|utils[\\/]logger\.js)/.test(p)).length, 0);
+console.log('PASS: short import name, full title preserved, no handler or auth invoked');
+"""
+        result = subprocess.run([shutil.which("node"), "-e", code], cwd=ROOT,
+                                capture_output=True, encoding="utf-8", timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("PASS:", result.stdout)
+        self.assertEqual(result.stderr, "")
+
     def test_runtime_adapter_changes_only_log_path_without_loading_auth(self):
         code = r"""
 const path = require('node:path');
