@@ -1,0 +1,15 @@
+# Copy to .codex/config.toml only if it does not already exist.
+# Replace C:/path/to/feishu-worker with this project's absolute Windows path.
+[mcp_servers.feishu]
+command = "powershell.exe"
+args = [
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:/path/to/feishu-worker/scripts/start-feishu-mcp.ps1"
+]
+cwd = "C:/path/to/feishu-worker"
+enabled = true
+startup_timeout_sec = 60
+tool_timeout_sec = 60

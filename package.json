@@ -1,0 +1,21 @@
+{
+  "name": "feishu-worker",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Windows Agent 工作流：将公众号技术文章整理为汇报式飞书知识资料卡",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "python -B -m unittest discover -s tests -v"
+  },
+  "dependencies": {
+    "@larksuiteoapi/lark-mcp": "0.5.1"
+  },
+  "overrides": {
+    "get-uri@6.0.5": {
+      "basic-ftp": "6.2.3"
+    }
+  }
+}

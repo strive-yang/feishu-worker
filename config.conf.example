@@ -1,0 +1,4 @@
+# Copy to config.conf only if it does not already exist.
+# Replace placeholders with your own Feishu application credentials.
+APP_ID=cli_your_app_id
+APP_SECRET=your_app_secret
